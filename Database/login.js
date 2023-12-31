@@ -3,11 +3,7 @@ import bcrypt from 'bcrypt';
 
 export async function SignUpUser(UserName, Email, password) {
     
-    const unique = await firebase.isUsernameUnique(UserName); 
-    if (!unique) { 
-      console.error('ALready exist')
-    }
-    else{ 
+  
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);   
     const newUser = {
@@ -17,7 +13,7 @@ export async function SignUpUser(UserName, Email, password) {
       "hasedPassword": hashedPassword
   }
     firebase.addUserData(newUser)
-    }
+    
   }
 
 export async function loginUser(username, inputPassword) {

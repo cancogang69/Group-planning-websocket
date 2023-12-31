@@ -11,18 +11,13 @@ const password = "securePassword";
 
 const socket = io('http://localhost:4000');
 
-
 socket.on('connect', () => {
     console.log('Connected to server');
-  });
-socket.on('loginSuccess', (result) => {
-    console.log('Login successful:', result);
-  
-  });
-socket.on('loginFailed', (result) => {
-    console.log('Login failed:', result);
- 
-  });
+  }); 
+socket.emit('checkUnique', userName); 
 
-socket.emit('login',userName, password )
+socket.on('UsernameUnique', (isunique) =>{ 
+    console.log(isunique); 
+}); 
+
 

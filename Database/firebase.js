@@ -26,8 +26,11 @@ const UsersCollectionRef = collection(db, "userData");
 
 
 export async function isUsernameUnique(username) {
-  const q = query(UsersCollectionRef, where("username", "==", username));
+  const q = query(UsersCollectionRef, where("userName", "==", username));
   const querySnapshot = await getDocs(q);
+
+  console.log(querySnapshot.docs.map(doc => doc.data())); // Log the documents found
+
   return querySnapshot.empty; // Returns true if no existing user is found
 }
 

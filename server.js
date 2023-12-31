@@ -1,7 +1,7 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
-import { addUserData, getUserData, updateUserData } from './Database/firebase.js'; 
+import * as firebase from './Database/firebase.js'; 
 import * as login from "./Database/login.js"
 
 
@@ -47,12 +47,21 @@ io.on('connection', (socket) => {
   });
 
 
+  socket.on('checkUnique',  async (username) => {
+    
+    const isUnique = await firebase.isUsernameUnique(username); 
+    console.log(isUnique); 
+    socket.emit('UsernameUnique', isUnique);
+    
+  });
+
+
   socket.on('disconnect', () => {
     console.log('Client disconnected');
     socket.emit('serverLog', 'Client disconnected');
   });
 });
 
-server.listen(4000, () => {
+server.listen(4000,'0.0.0.0', () => {
   console.log('Listening on port 4000');
 });
