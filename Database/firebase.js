@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { query, where, getFirestore, collection, getDocs, addDoc } from 'firebase/firestore';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -25,7 +25,14 @@ const db = getFirestore(app);
 const UsersCollectionRef = collection(db, "userData");
 
 
+export async function isUsernameUnique(username) {
+  const q = query(UsersCollectionRef, where("username", "==", username));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.empty; // Returns true if no existing user is found
+}
+
 export async function addUserData(userData) {
+  
   try {
     const docRef = await addDoc(UsersCollectionRef, userData);
     console.log("Document written with ID: ", docRef.id);
@@ -47,6 +54,18 @@ export async function getUserData() {
   } catch (e) {
     console.error("Error getting documents: ", e);
   }
+}
+
+
+export async function getUserByUsername(username) {
+  const q = query(UsersCollectionRef, where("userName", "==", username));
+  const querySnapshot = await getDocs(q);
+  
+  if (querySnapshot.empty) {
+    return null; 
+  }
+  const userData = querySnapshot.docs[0].data();
+  return userData;
 }
 
 export async function updateUserData(userId, updatedData) {
