@@ -17,22 +17,18 @@ const firebaseConfig = {
   measurementId: "G-FVDXWR2RNT"
 };
 
-
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const UsersCollectionRef = collection(db, "userData");
+const UsersCollectionRef = collection(db, "users");
 
-
-export async function isUsernameUnique(username) {
-  const q = query(UsersCollectionRef, where("username", "==", username));
+export async function isEmailUnique(email) {
+  const q = query(UsersCollectionRef, where("email", "==", email));
   const querySnapshot = await getDocs(q);
   return querySnapshot.empty; // Returns true if no existing user is found
 }
 
-export async function addUserData(userData) {
-  
+export async function addUser(userData) {
   try {
     const docRef = await addDoc(UsersCollectionRef, userData);
     console.log("Document written with ID: ", docRef.id);
@@ -41,8 +37,7 @@ export async function addUserData(userData) {
   }
 }
 
-
-export async function getUserData() {
+export async function getUser() {
   try {
     const querySnapshot = await getDocs(UsersCollectionRef);
     const users = [];
@@ -55,7 +50,6 @@ export async function getUserData() {
     console.error("Error getting documents: ", e);
   }
 }
-
 
 export async function getUserByUsername(username) {
   const q = query(UsersCollectionRef, where("userName", "==", username));

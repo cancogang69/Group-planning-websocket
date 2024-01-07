@@ -1,55 +1,51 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
-import { addUserData, getUserData, updateUserData } from './Database/firebase.js'; 
-import * as login from "./Database/login.js"
-
+import { useAzureSocketIO } from "@azure/web-pubsub-socket.io";
+import { signUp } from "./database/user/signup.js"
+import { login } from "./database/user/login.js"
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-io.on('connection', (socket) => {
-  console.log('New client connected');
-  socket.emit('serverLog', 'New client connected'); 
+useAzureSocketIO(io, {
+  hub: "Hub",
+  connectionString: "Endpoint=https://group-planning.webpubsub.azure.com;AccessKey=Ow0VM8Hph/A/6/T35kWhmJy6sRPimRxS/3Nr97jgMx0=;Version=1.0;"
+});
 
-  socket.on('signup',async  (UserName, Email, password) => {
-    
-    if (!UserName || !Email || !password) {
-      console.error('Signup failed: Missing required fields');
-      socket.emit('serverLog', 'Signup failed: Missing required fields');
+io.on('connection', (socket) => {
+  console.log(`${socket.id} connected`);
+  socket.emit('handshake', `Hello ${socket.id}!`); 
+
+  socket.on('sign-up', async (userName, email, password) => {
+    if (!userName || !email || !password) {
+      socket.emit('sign-up log', 'Signup failed: Missing required fields');
       return; // Stop further execution if validation fails
     }
     
-    await login.SignUpUser(UserName, Email, password)
+    await signUp(userName, email, password)
       .then(() => {
-        console.log('Signup successful');
-        socket.emit('serverLog', 'Signup successful'); 
+        socket.emit('sign-up log', 'Signup successful'); 
       })
       .catch((error) => {
-        console.error('Signup failed:', error);
-        socket.emit('serverLog', 'Signup failed: ' + error); 
+        socket.emit('sign-up log', error.message); 
       });
   });
 
-  socket.on('login',  async (username, password) => {
-  
-    const result = await login.loginUser(username, password);
-
+  socket.on('login', async (username, password) => {
+    const result = await login(username, password);
 
     if (result.success) {
       console.log("success")
-      socket.emit('loginSuccess', result);
+      socket.emit('login log', result);
     } else {
- 
-      socket.emit('loginFailed', result);
+      socket.emit('login log', result);
     }
   });
 
-
   socket.on('disconnect', () => {
-    console.log('Client disconnected');
-    socket.emit('serverLog', 'Client disconnected');
+    console.log(`${socket.id} disconnected!`);
   });
 });
 
