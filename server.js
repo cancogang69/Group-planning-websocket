@@ -2,9 +2,9 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import { useAzureSocketIO } from "@azure/web-pubsub-socket.io";
-import { addUser, getUser, updateUserData } from './database/firebase.js'; 
 import { signUp } from "./database/user/signup.js"
 import { login } from "./database/user/login.js"
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -16,7 +16,7 @@ useAzureSocketIO(io, {
 
 io.on('connection', (socket) => {
   console.log(`${socket.id} connected`);
-  socket.to(socket.id).emit('handshake', `Hello ${socket.id}!`); 
+  socket.emit('handshake', `Hello ${socket.id}!`); 
 
   socket.on('sign-up', async (userName, email, password) => {
     if (!userName || !email || !password) {
