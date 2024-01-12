@@ -1,18 +1,21 @@
-import * as firebase from "../firebase.js"
+import { isEmailExist, addUser } from "../firebase.js"
 import bcrypt from 'bcrypt';
 
 export async function signUp(userName, email, password) {
-  const unique = await firebase.isEmailUnique(email); 
-  if (!unique) { 
+  const unique = await isEmailExist(email); 
+  if (unique)
     throw new Error('Email aLready exist')
-  }
 
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(password, saltRounds);   
   const newUser = {
+    "email": email,
     "userName": userName, 
-    "email": email, 
-    "hashPassword": hashedPassword
+    "hashPassword": hashedPassword,
+    "personalIDs": [],
+    "sharedIDs": [],
   }
-  firebase.addUser(newUser)
+  
+  await addUser(newUser)
+  return newUser
 }

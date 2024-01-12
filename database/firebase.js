@@ -1,7 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { query, where, getFirestore, collection, getDocs, addDoc } from 'firebase/firestore';
+import { query, where, getFirestore, collection, getDocs, addDoc, doc, getDoc } from 'firebase/firestore';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -20,26 +19,27 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const UsersCollectionRef = collection(db, "users");
+//user section
+const UsersRef = collection(db, "users");
 
-export async function isEmailUnique(email) {
-  const q = query(UsersCollectionRef, where("email", "==", email));
+export async function isEmailExist(email) {
+  const q = query(UsersRef, where("email", "==", email))
   const querySnapshot = await getDocs(q);
-  return querySnapshot.empty; // Returns true if no existing user is found
+  return !querySnapshot.empty; // Returns true if no existing user is found
 }
 
 export async function addUser(userData) {
   try {
-    const docRef = await addDoc(UsersCollectionRef, userData);
+    const docRef = await addDoc(UsersRef, userData);
     console.log("Document written with ID: ", docRef.id);
-  } catch (e) {
-    console.error("Error adding document: ", e);
+  } catch (error) {
+    console.log("Cannot add user")
   }
 }
 
 export async function getUser() {
   try {
-    const querySnapshot = await getDocs(UsersCollectionRef);
+    const querySnapshot = await getDocs(UsersRef);
     const users = [];
     querySnapshot.forEach((doc) => {
       console.log(doc.id, " => ", doc.data());
@@ -51,22 +51,34 @@ export async function getUser() {
   }
 }
 
-export async function getUserByUsername(username) {
-  const q = query(UsersCollectionRef, where("userName", "==", username));
+export async function getUserEmail(email) {
+  const q = query(UsersRef, where("email", "==", email));
   const querySnapshot = await getDocs(q);
+
+  if (querySnapshot.empty)
+    return false; 
   
-  if (querySnapshot.empty) {
-    return null; 
-  }
   const userData = querySnapshot.docs[0].data();
   return userData;
 }
 
 export async function updateUserData(userId, updatedData) {
   try {
-    const userDocRef = doc(db, "userData", userId);
+    const userDocRef = doc(db, "users", userId);
     await updateDoc(userDocRef, updatedData);
     console.log("Document updated with ID: ", userId);
+  } catch (e) {
+    console.error("Error updating document: ", e);
+  }
+}
+
+
+//project section
+const ProjectsCollectionRef = collection(db, "projects");
+
+export async function createProject(userId, updatedData) {
+  try {
+    return true
   } catch (e) {
     console.error("Error updating document: ", e);
   }
