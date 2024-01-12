@@ -22,10 +22,11 @@ const db = getFirestore(app);
 //user section
 const UsersRef = collection(db, "users");
 
-export async function isEmailExist(email) {
+// Returns false if no existing user is found
+export async function getUserEmail(email) {
   const q = query(UsersRef, where("email", "==", email))
   const querySnapshot = await getDocs(q);
-  return !querySnapshot.empty; // Returns true if no existing user is found
+  return querySnapshot; 
 }
 
 export async function addUser(userData) {
@@ -33,7 +34,7 @@ export async function addUser(userData) {
     const docRef = await addDoc(UsersRef, userData);
     console.log("Document written with ID: ", docRef.id);
   } catch (error) {
-    console.log("Cannot add user")
+    throw new Error("Cannot add user")
   }
 }
 
@@ -51,13 +52,11 @@ export async function getUser() {
   }
 }
 
-export async function getUserEmail(email) {
-  const q = query(UsersRef, where("email", "==", email));
-  const querySnapshot = await getDocs(q);
+export async function getUserData(email) {
+  const querySnapshot = await getUserEmail(email)
+  if(querySnapshot.empty)
+    return false
 
-  if (querySnapshot.empty)
-    return false; 
-  
   const userData = querySnapshot.docs[0].data();
   return userData;
 }

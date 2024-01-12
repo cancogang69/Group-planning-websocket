@@ -5,17 +5,22 @@ import { useAzureSocketIO } from "@azure/web-pubsub-socket.io";
 import { signUp } from "./database/user/signup.js"
 import { login } from "./database/user/login.js"
 import { addMember } from './database/project/addMember.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 // use this when use azure webpub sub for socket.io
-// const azureConfig = {
-//   hub: "group_planning",
-//   connectionString: "Endpoint=https://group-planning.webpubsub.azure.com;AccessKey=Ow0VM8Hph/A/6/T35kWhmJy6sRPimRxS/3Nr97jgMx0=;Version=1.0;"
-// }
-// useAzureSocketIO(io, azureConfig);
+const azureConfig = {
+  hub: "group_planning",
+  connectionString: "Endpoint=https://group-planning-websocket.webpubsub.azure.com;AccessKey=h8zR5JnZVFT8bjzR1DGKoJZQStP1uZ60vDnbv2uUZI4=;Version=1.0;"
+}
+await useAzureSocketIO(io, azureConfig);
 
 function hasAllFieldsIn(fields, obj) {
   const keys = Object.keys(obj);
@@ -39,8 +44,7 @@ const projectInitField = [
   "status",
   "start_date",
   "end_date",
-  "ownerID",
-  "isShared"
+  "ownerID"
 ]
 
 const MISSING = "Missing required fields"
@@ -55,8 +59,8 @@ io.on('connection', (socket) => {
       socket.emit('sign-up log', `Signup failed: ${MISSING}`);
       return
     }
-    
-    await signUp(userData.name, userData.email, userData.password)
+    socket.emit('sign-up log', "connect...")
+    await signUp(userData)
       .then((newUser) => {
         socket.emit('user log', 'Signup successful'); 
         socket.emit('user change', newUser )
@@ -72,17 +76,16 @@ io.on('connection', (socket) => {
       socket.emit("user log", `Login failed: ${MISSING}`)
       return
     }
-    const result = await login(userData.email, userData.password);
-
-    if (result.success) {
-      console.log("login successful")
-      socket.emit('user log', "login successful")
-      socket.emit("user change", result.user)
-      socket.join(result.user.sharedIDs)
-    } else {
-      console.log("login failed")
-      socket.emit('user log', result);
-    }
+    await login(userData.email, userData.password)
+          .then(user => {
+            console.log("login successful")
+            socket.emit('user log', "login successful")
+            socket.emit("user change", user)
+            socket.join(user.sharedIDs)
+          })
+          .catch((error) => {
+            socket.emit("user log", error.message)
+          })
   });
 
   socket.on("init project", async (projectData) => {
@@ -95,11 +98,23 @@ io.on('connection', (socket) => {
   })
 
   socket.on("add project member", async (projecData, ownerEmail, userEmail) => {
+    if(!hasAllFieldsIn(projecData)) {
+      socket.emit("project log", `Project data: ${MISSING}`)
+      return
+    }
 
+    if(!ownerEmail || !userEmail) {
+      socket.emit("project log", "Missing owner or user")
+      return
+    }
+
+    // add project member
   })
 
-  socket.on("add new member", (members, newMember) => {
-
+  socket.on("add new task", async (projecData, task) => {
+    if(!hasAllFieldsIn(projecData)) {
+      return
+    }
   })
 
   socket.on('disconnect', () => {
@@ -107,6 +122,18 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(4000, () => {
-  console.log('Listening on port 4000');
+app
+  .get("/", (req, res) => {
+    res.sendFile(__dirname + "/public/index.html")
+  })
+  .get("/negotiate", async (req, res) => {
+  res.json({
+    endpoint: "https://group-planning-websocket.webpubsub.azure.com",
+    path: "/clients/socketio/hubs/group-planning"
+  })
+})
+
+const port = process.env.PORT || '8080' 
+server.listen(port, () => {
+  console.log(`Listening on port ${port}`);
 });

@@ -6,6 +6,7 @@
   "author": "Cancogang69 <90518328+Cancogang69@users.noreply.github.com>",
   "license": "MIT",
   "scripts": {
+    "build": "yarn install",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
