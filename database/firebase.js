@@ -72,3 +72,13 @@ export async function updateUserData(userId, updatedData) {
   }
 }
 
+const project = collection(db, "projects");
+
+export async function addNewProject(projectData) {
+  try {
+    const docRef = await addDoc(project, projectData);
+    console.log("Document written with ID: ", docRef.id);
+  } catch (e) {
+    console.error("Error adding document: ", e);
+  }
+}
