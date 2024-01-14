@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 import { useAzureSocketIO } from "@azure/web-pubsub-socket.io";
 import { signUp } from "./database/user/signup.js"
 import { login } from "./database/user/login.js"
-import { addProject } from "./database/project/newProject.js"
+import { addProject } from "./database/project/Project.js"
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -44,7 +44,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('newProject', async (projectData) => {
+  socket.on('project', async (projectData) => {
     await addProject(projectData)
       .then(() => {
         socket.emit('new-project log', 'Project added successfully'); 

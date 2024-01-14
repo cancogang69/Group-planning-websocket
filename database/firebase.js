@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { query, where, getFirestore, collection, getDocs, addDoc } from 'firebase/firestore';
+import { query, where, getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -72,13 +72,42 @@ export async function updateUserData(userId, updatedData) {
   }
 }
 
+
+// Project
 const project = collection(db, "projects");
 
+//Add new Project
 export async function addNewProject(projectData) {
   try {
     const docRef = await addDoc(project, projectData);
+    await updateDoc(doc(project,docRef.id), {id: docRef.id});
     console.log("Document written with ID: ", docRef.id);
   } catch (e) {
     console.error("Error adding document: ", e);
+  }
+}
+
+//Get project
+export async function getProject() {
+  try {
+    const querySnapshot = await getDocs(project);
+    const projects = [];
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
+      projects.push(doc.data());
+    });
+    return projects;
+  } catch (e) {
+    console.error("Error getting documents: ", e);
+  }
+}
+
+//Delete project
+export async function deleteProject(projectId) {
+  try {
+    await deleteDoc(doc(project, projectId));
+    console.log("Document deleted with ID: ", projectId);
+  } catch (e) {
+    console.error("Error deleting document: ", e);
   }
 }

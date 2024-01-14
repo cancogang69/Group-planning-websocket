@@ -17,3 +17,21 @@ export async function addProject(projectData) {
   }
 }
 
+export async function getProject() {
+  try {
+    const projects = await firebase.getProject()
+    return projects;
+  } catch (e) {
+    console.error("Error getting documents: ", e);
+  }
+}
+
+export async function deleteProject(projectId) {
+  try {
+    firebase.deleteProject(projectId)
+  } catch (e) {
+    console.error("Error deleting document: ", e);
+  }
+}
+
+
