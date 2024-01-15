@@ -89,12 +89,20 @@ export async function addNewProject(projectData) {
 
 //Get project
 export async function getProject() {
+  const date = new Date();
   try {
     const querySnapshot = await getDocs(project);
     const projects = [];
     querySnapshot.forEach((doc) => {
-      console.log(doc.id, " => ", doc.data());
-      projects.push(doc.data());
+      const data = {
+        id: doc.id,
+        title: doc.data().title,
+        createdAt: doc.data().start.toDate(),
+        description: doc.data().description,
+        status: doc.data().status,
+      }
+      console.log(doc.id, " => ", JSON.stringify(data));
+      projects.push(data);
     });
     return projects;
   } catch (e) {

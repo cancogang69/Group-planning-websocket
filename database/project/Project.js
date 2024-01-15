@@ -8,8 +8,7 @@ export async function addProject(projectData) {
         "description": projectData.description, 
         "title": projectData.title,
         "status":projectData.completionStatus,
-        "start date": date,
-
+        "start": date,
     }
     firebase.addNewProject(newProject)
   } catch (e) {
@@ -20,7 +19,8 @@ export async function addProject(projectData) {
 export async function getProject() {
   try {
     const projects = await firebase.getProject()
-    return projects;
+    // console.log(projects)
+    return projects
   } catch (e) {
     console.error("Error getting documents: ", e);
   }
