@@ -47,19 +47,28 @@ const projectInitField = [
   "ownerID"
 ]
 
+const projectField = [
+  "title",
+  "status",
+  "start_date",
+  "end_date",
+  "ownerID",
+  "memberID"
+]
+
 const MISSING = "Missing required fields"
 
 io.on('connection', (socket) => {
   console.log(`${socket.id} connected`);
   socket.emit('handshake', `Hello ${socket.id}!`); 
 
-  //sign up section
+  // User section
   socket.on('sign-up', async (userData) => {
     if (!hasAllFieldsIn(signupField, userData)) {
-      socket.emit('sign-up log', `Signup failed: ${MISSING}`);
+      socket.emit('user log', `Signup failed: ${MISSING}`);
       return
     }
-    socket.emit('sign-up log', "connect...")
+
     await signUp(userData)
       .then((newUser) => {
         socket.emit('user log', 'Signup successful'); 
@@ -70,16 +79,16 @@ io.on('connection', (socket) => {
       });
   });
 
-  //login section
   socket.on('login', async (userData) => {
     if (!hasAllFieldsIn(loginField, userData)) {
       socket.emit("user log", `Login failed: ${MISSING}`)
       return
     }
+
     await login(userData.email, userData.password)
           .then(user => {
-            console.log("login successful")
-            socket.emit('user log', "login successful")
+            console.log("Login successful")
+            socket.emit('user log', "Login successful")
             socket.emit("user change", user)
             socket.join(user.sharedIDs)
           })
@@ -88,6 +97,7 @@ io.on('connection', (socket) => {
           })
   });
 
+  // Project section
   socket.on("init project", async (projectData) => {
     if(!hasAllFieldsIn(projectInitField, projectData)) {
       socket.emit("project log", `Init project: ${MISSING}`)
@@ -97,18 +107,32 @@ io.on('connection', (socket) => {
     //init project
   })
 
-  socket.on("add project member", async (projecData, ownerEmail, userEmail) => {
-    if(!hasAllFieldsIn(projecData)) {
+  socket.on("add project member", async (projectData, ownerEmail, newEmail) => {
+    if(!hasAllFieldsIn(projectData)) {
       socket.emit("project log", `Project data: ${MISSING}`)
       return
     }
 
-    if(!ownerEmail || !userEmail) {
-      socket.emit("project log", "Missing owner or user")
-      return
+    if(!ownerEmail || !newEmail) {
+      socket.emit("project log", `Missing owner or new member email`)
+      return 
     }
 
     // add project member
+  })
+
+  socket.on("remove project member", async (projectData, ownerEmail, memberEmail) => {
+    if(!hasAllFieldsIn(projectData)) {
+      socket.emit("project log", `Project data: ${MISSING}`)
+      return
+    }
+
+    if(!ownerEmail || !memberEmail) {
+      socket.emit("project log", `Missing owner or new member email`)
+      return 
+    }
+
+    // remove project member
   })
 
   socket.on("add new task", async (projecData, task) => {
@@ -133,7 +157,7 @@ app
   })
 })
 
-const port = process.env.PORT || '8080' 
+const port = process.env.PORT || 8080 
 server.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });
