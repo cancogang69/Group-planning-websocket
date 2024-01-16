@@ -4,8 +4,8 @@ import { Server } from 'socket.io';
 import { useAzureSocketIO } from "@azure/web-pubsub-socket.io";
 import { signUp } from "./database/user/signup.js"
 import { login } from "./database/user/login.js"
-import { addMember } from './database/project/addMember.js';
-import { addProject, getProject, deleteProject } from './database/project/Project.js';
+//import { addMember } from './database/project/addMember.js';
+import {addProject, getProject, deleteProject} from './database/project/Project.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
@@ -118,39 +118,38 @@ io.on('connection', (socket) => {
     }
   })
 
+    //PROJECT
+    socket.on('newProject', async (projectData) => {
+      await addProject(projectData)
+        .then(() => {
+          socket.emit('new-project log', 'Project added successfully'); 
+        })
+        .catch((error) => {
+          socket.emit('new-project log', error.message); 
+        });
+    });
+  
+  socket.on('getProject', async () => {
+    try {
+      const projects = await getProject();
+      socket.emit('Projects', projects);
+    } catch (error) {
+      socket.emit('error', error);
+      console.error('Error getting projects:', error);
+    }
+  });
+  
+  socket.on('deleteProject', async (projectId) => {
+    try {
+      await deleteProject(projectId);
+      socket.emit('deleteProject', 'Project deleted successfully');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+    }
+  });
   socket.on('disconnect', () => {
     console.log(`${socket.id} disconnected!`);
   });
-});
-
-  //PROJECT
-  socket.on('newProject', async (projectData) => {
-    await addProject(projectData)
-      .then(() => {
-        socket.emit('new-project log', 'Project added successfully'); 
-      })
-      .catch((error) => {
-        socket.emit('new-project log', error.message); 
-      });
-  });
-
-socket.on('getProject', async () => {
-  try {
-    const projects = await getProject();
-    socket.emit('Projects', projects);
-  } catch (error) {
-    socket.emit('error', error);
-    console.error('Error getting projects:', error);
-  }
-});
-
-socket.on('deleteProject', async (projectId) => {
-  try {
-    await deleteProject(projectId);
-    socket.emit('deleteProject', 'Project deleted successfully');
-  } catch (error) {
-    console.error('Error deleting project:', error);
-  }
 });
 
 app

@@ -5,10 +5,13 @@ export async function addProject(projectData) {
   try {
     const newProject = {
         "id": projectData.id, 
-        "description": projectData.description, 
         "title": projectData.title,
+        "createdAt": date,
         "status":projectData.completionStatus,
-        "start": date,
+        "description": projectData.description, 
+        "tasks": projectData.Tasks,
+        "members": projectData.members,
+        "master": projectData.master,
     }
     firebase.addNewProject(newProject)
   } catch (e) {
