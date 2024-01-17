@@ -16,11 +16,11 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // use this when use azure webpub sub for socket.io
-const azureConfig = {
-  hub: "group_planning",
-  connectionString: "Endpoint=https://group-planning-websocket.webpubsub.azure.com;AccessKey=h8zR5JnZVFT8bjzR1DGKoJZQStP1uZ60vDnbv2uUZI4=;Version=1.0;"
-}
-await useAzureSocketIO(io, azureConfig);
+// const azureConfig = {
+//   hub: "group_planning",
+//   connectionString: "Endpoint=https://group-planning-websocket.webpubsub.azure.com;AccessKey=h8zR5JnZVFT8bjzR1DGKoJZQStP1uZ60vDnbv2uUZI4=;Version=1.0;"
+// }
+// await useAzureSocketIO(io, azureConfig);
 
 function hasAllFieldsIn(fields, obj) {
   const keys = Object.keys(obj);
@@ -39,21 +39,10 @@ const loginField = [
   "password"
 ]
 
-const projectInitField = [
-  "title",
-  "status",
-  "start_date",
-  "end_date",
-  "ownerID"
-]
-
 const projectField = [
   "title",
-  "status",
-  "start_date",
-  "end_date",
-  "ownerID",
-  "memberID"
+  "createdAt",
+  "master",
 ]
 
 const MISSING = "Missing required fields"
@@ -71,11 +60,10 @@ io.on('connection', (socket) => {
 
     await signUp(userData)
       .then((newUser) => {
-        socket.emit('user log', 'Signup successful'); 
-        socket.emit('user change', newUser )
+        socket.emit('user log', "Signup successful")
       })
       .catch((error) => {
-        socket.emit('user log', error.message); 
+        socket.emit('user log', error.message)
       });
   });
 
@@ -98,16 +86,18 @@ io.on('connection', (socket) => {
   });
 
   // Project section
-  socket.on("init project", async (projectData) => {
-    if(!hasAllFieldsIn(projectInitField, projectData)) {
-      socket.emit("project log", `Init project: ${MISSING}`)
+  socket.on("update project", async (projectData) => {
+    console.log(projectData)
+    if(!hasAllFieldsIn(projectField, projectData)) {
+      socket.emit("project log", `Update project: ${MISSING}`)
       return
     }
 
     //init project
+    socket.emit("project log", "Update successful", projectData)
   })
 
-  socket.on("add project member", async (projectData, ownerEmail, newEmail) => {
+  socket.on("project member", async (projectData, ownerEmail, memberEmail) => {
     if(!hasAllFieldsIn(projectData)) {
       socket.emit("project log", `Project data: ${MISSING}`)
       return
@@ -119,20 +109,6 @@ io.on('connection', (socket) => {
     }
 
     // add project member
-  })
-
-  socket.on("remove project member", async (projectData, ownerEmail, memberEmail) => {
-    if(!hasAllFieldsIn(projectData)) {
-      socket.emit("project log", `Project data: ${MISSING}`)
-      return
-    }
-
-    if(!ownerEmail || !memberEmail) {
-      socket.emit("project log", `Missing owner or new member email`)
-      return 
-    }
-
-    // remove project member
   })
 
   socket.on("add new task", async (projecData, task) => {
@@ -157,7 +133,7 @@ app
   })
 })
 
-const port = process.env.PORT || 8080 
+const port = process.env.PORT || 4000 
 server.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });
