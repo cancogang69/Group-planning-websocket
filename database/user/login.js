@@ -1,16 +1,14 @@
-import * as firebase from "../firebase.js"
+import { getUserData } from '../firebase.js';
 import bcrypt from 'bcrypt';
 
-export async function login(username, inputPassword) {
-  const result = await firebase.getUserByUsername(username);
-  if (!result) {
-    return { success: false, message: 'User not found' };
-  }
+export async function login(email, password) {
+  const user = await getUserData(email)
+  if (!user) 
+    throw new Error('User not found')
   
-  const isMatch = await bcrypt.compare(inputPassword, result.hasedPassword);
-  if (isMatch) {
-    return { success: true, message: 'Login successful', username };
-  } else {
-    return { success: false, message: 'Incorrect password' };
-  }    
+  const isMatch = await bcrypt.compare(password, user.hashPassword)
+  if(!isMatch)
+    throw new Error('Incorrect password')
+  
+  return user;   
 }
