@@ -185,45 +185,27 @@ export async function deleteTask(taskID) {
 }
 
 //Image section
-const getBlobFroUri = async (uri) => {
-  const blob = await new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.onload = function () {
-      resolve(xhr.response);
-    };
-    xhr.onerror = function (e) {
-      reject(new TypeError("Network request failed"));
-    };
-    xhr.responseType = "blob";
-    xhr.open("GET", uri, true);
-    xhr.send(null);
-  });
-
-  return blob;
-};
 
 export async function uploadAva(file, id){
-  let avaURL;
-  const fileBlob = await getBlobFroUri(file);
-  const storageRef = ref(storage, `images/avatar/${id}.jpg`);
-  console.log("uploading file");
-  await uploadBytes(storageRef, fileBlob).then((snapShot) => {
-    console.log("Uploaded a file!");
-    avaURL = snapShot.ref.fullPath;
-  });
-  await getDownloadURL(ref(storage, avaURL))
-    .then((url) => {
-      avaURL = url;
-    })
-    .catch((err) => {
-      console.log(err);
+    let avaURL;
+    const storageRef = ref(storage, `images/avatar/${id}.jpg`);
+    console.log("uploading file");
+    await uploadBytes(storageRef, file).then((snapShot) => {
+      console.log("Uploaded a file!");
+      avaURL = snapShot.ref.fullPath;
     });
-  return avaURL;
+    await getDownloadURL(ref(storage, avaURL))
+      .then((url) => {
+        avaURL = url;
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+    //return avaURL;
 };
 
-// Download image from cloud storage
 export async function downloadAva(id){
-  let avaURL;
+    let avaURL;
   await getDownloadURL(ref(storage, `images/avatar/${id}.jpg`))
     .then((url) => {
       avaURL = url;
