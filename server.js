@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { addProject, getProject, deleteProject } from './database/project/Project.js';
 import { addTask, updateTask, getTask, deleteTask } from './database/project/Task.js';
+import { uploadAva, downloadAva } from './database/user/profile.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -188,6 +189,26 @@ socket.on('updateTask', async (taskID, task) => {
     socket.emit('updateTask log', 'Task updated successfully');
   } catch (error) {
     console.error('Error updating task:', error);
+  }
+});
+
+//Profile Image
+socket.on('uploadAva', async (file, id) => {
+  try {
+    await uploadAva(file, id);
+    socket.emit('upload', 'upload image successfully');
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+socket.on('downloadAva', async (id) => {
+  try {
+    const avaURL = await downloadAva(id);
+    socket.emit('download', avaURL); // Send the actual image URL to the client
+  } catch (e) {
+    console.error('Error:', e);
+    socket.emit('download', null); // Send null or an error message to indicate failure
   }
 });
 
