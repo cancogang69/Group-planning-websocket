@@ -5,9 +5,10 @@ import { useAzureSocketIO } from "@azure/web-pubsub-socket.io";
 import { signUp } from "./database/user/signup.js"
 import { login } from "./database/user/login.js"
 //import { addMember } from './database/project/addMember.js';
-import {addProject, getProject, deleteProject} from './database/project/Project.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { addProject, getProject, deleteProject } from './database/project/Project.js';
+import { addTask, updateTask, getTask, deleteTask } from './database/project/Task.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -83,6 +84,7 @@ io.on('connection', (socket) => {
             socket.emit('user log', "login successful")
             socket.emit("user change", user)
             socket.join(user.sharedIDs)
+            console.log(user)
           })
           .catch((error) => {
             socket.emit("user log", error.message)
@@ -112,11 +114,11 @@ io.on('connection', (socket) => {
     // add project member
   })
 
-  socket.on("add new task", async (projecData, task) => {
-    if(!hasAllFieldsIn(projecData)) {
-      return
-    }
-  })
+  // socket.on("add new task", async (projecData, task) => {
+  //   if(!hasAllFieldsIn(projecData)) {
+  //     return
+  //   }
+  // })
 
     //PROJECT
     socket.on('newProject', async (projectData) => {
@@ -147,6 +149,48 @@ io.on('connection', (socket) => {
       console.error('Error deleting project:', error);
     }
   });
+
+
+  //Tasks
+socket.on('newTask', async (task) => {
+  try {
+    console.log(task);
+    await addTask(task);
+    socket.emit('newTask log', 'Task added successfully');
+  } catch (error) {
+    console.error('Error adding task:', error);
+  }
+});
+
+socket.on('getTask', async () => {
+  try {
+    const tasks = await getTask();
+    socket.emit('Tasks', tasks);
+  } catch (error) {
+    socket.emit('error', error);
+    console.error('Error getting tasks:', error);
+  }
+});
+
+socket.on('deleteTask', async (taskId) => {
+  try {
+    await deleteTask(taskId);
+    socket.emit('deleteTask log', 'Task deleted successfully');
+  } catch (error) {
+    console.error('Error deleting task:', error);
+  }
+});
+
+socket.on('updateTask', async (taskID, task) => {
+  try {
+    console.log(taskID);
+    await updateTask(taskID, task);
+    socket.emit('updateTask log', 'Task updated successfully');
+  } catch (error) {
+    console.error('Error updating task:', error);
+  }
+});
+
   socket.on('disconnect', () => {
     console.log(`${socket.id} disconnected!`);
   });

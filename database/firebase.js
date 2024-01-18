@@ -1,6 +1,8 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { query, where, getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
+import { getStorage } from "firebase/storage";
+import { query, where, getFirestore, collection, getDocs, addDoc, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -18,6 +20,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 //user section
 const UsersRef = collection(db, "users");
@@ -72,6 +75,7 @@ export async function updateUserData(userId, updatedData) {
 }
 
 
+
 // Project section
 const project = collection(db, "projects");
 
@@ -88,7 +92,6 @@ export async function addNewProject(projectData) {
 
 //Get project
 export async function getProject() {
-  const date = new Date();
   try {
     const querySnapshot = await getDocs(project);
     const projects = [];
@@ -121,4 +124,114 @@ export async function deleteProject(projectId) {
     console.error("Error deleting document: ", e);
   }
 }
+
+//Task section
+
+const task = collection(db, "tasks");
+
+export async function addTask(taskData) {
+  try {
+    const docRef = await addDoc(task, taskData);
+    await updateDoc(doc(task,docRef.id), {id: docRef.id});
+    console.log("Document written with ID: ", docRef.id);
+  } catch (e) {
+    console.error("Error adding document: ", e);
+  }
+}
+
+export async function getTask() {
+  try {
+    const querySnapshot = await getDocs(task);
+    const tasks = [];
+    querySnapshot.forEach((doc) => {
+      const data = {
+        key: doc.id,
+        text: doc.data().description,
+        status: doc.data().status,
+        asigned_to: doc.data().assignedTo,
+      }
+      console.log(doc.id, " => ", JSON.stringify(data));
+      tasks.push(data);
+    });
+    return tasks;
+  } catch (e) {
+    console.error("Error getting documents: ", e);
+  }
+}
+
+export async function updateTask(taskID, taskData) {
+  try {
+    const docRef = doc(task, taskID);
+    await updateDoc(docRef, {
+      id: taskID,
+      status: taskData.status,
+      description: taskData.text,
+      assignedTo: taskData.asigned_to,
+    });
+    console.log("Document updated with ID: ", taskID);
+  } catch (e) {
+    console.error("Error updating document: ", e);
+  }
+}
+
+export async function deleteTask(taskID) {
+  try {
+    const docRef = doc(task, taskID);
+    await deleteDoc(docRef);
+    console.log("Document updated with ID: ", taskID);
+  } catch (e) {
+    console.error("Error updating document: ", e);
+  }
+}
+
+//Image section
+const getBlobFroUri = async (uri) => {
+  const blob = await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = function () {
+      resolve(xhr.response);
+    };
+    xhr.onerror = function (e) {
+      reject(new TypeError("Network request failed"));
+    };
+    xhr.responseType = "blob";
+    xhr.open("GET", uri, true);
+    xhr.send(null);
+  });
+
+  return blob;
+};
+
+export async function uploadAva(file, id){
+  let avaURL;
+  const fileBlob = await getBlobFroUri(file);
+  const storageRef = ref(storage, `images/avatar/${id}.jpg`);
+  console.log("uploading file");
+  await uploadBytes(storageRef, fileBlob).then((snapShot) => {
+    console.log("Uploaded a file!");
+    avaURL = snapShot.ref.fullPath;
+  });
+  await getDownloadURL(ref(storage, avaURL))
+    .then((url) => {
+      avaURL = url;
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+  return avaURL;
+};
+
+// Download image from cloud storage
+export async function downloadAva(id){
+  let avaURL;
+  await getDownloadURL(ref(storage, `images/avatar/${id}.jpg`))
+    .then((url) => {
+      avaURL = url;
+    })
+    .catch((err) => {
+      console.log("No image found");
+    });
+  return avaURL;
+};
+
 
