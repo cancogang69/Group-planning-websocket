@@ -4,16 +4,15 @@ import bcrypt from 'bcrypt';
 export async function signUp(userData) {
   const unique = await getUserEmail(userData.email);
   if (!unique.empty)
-    throw new Error('Email aLready exist')
+    throw new Error('Email has already been taken')
 
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(userData.password, saltRounds);   
   const newUser = {
-    "email": userData.email,
-    "userName": userData.name, 
-    "hashPassword": hashedPassword,
-    "personalIDs": [],
-    "sharedIDs": [],
+    email: userData.email,
+    name: userData.name, 
+    hashPassword: hashedPassword,
+    sharedIDs: [],
   }
 
   await addUser(newUser)

@@ -1,8 +1,8 @@
-import { getUserData } from '../firebase.js';
+import { getUserData, getProjectByID } from '../firebase.js';
 import bcrypt from 'bcrypt';
 
 export async function login(email, password) {
-  const user = await getUserData(email)
+  let user = await getUserData(email)
   if (!user) 
     throw new Error('User not found')
   
@@ -10,5 +10,17 @@ export async function login(email, password) {
   if(!isMatch)
     throw new Error('Incorrect password')
   
-  return user;   
+  let projects = []
+  if(user.sharedIDs.length != 0) {
+    const projSnap = await getProjectByID(user.sharedIDs)
+    projSnap.forEach((doc) => {
+      let project = doc.data()
+      project.id = doc.id
+      projects.push(project)
+    })
+    
+  }
+  let {hashPassword, ...rest} = user
+  rest.projects = projects
+  return rest   
 }

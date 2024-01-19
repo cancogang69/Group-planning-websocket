@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { query, where, getFirestore, collection, getDocs, addDoc, doc, getDoc } from 'firebase/firestore';
+import { query, where, getFirestore, collection, getDocs, addDoc, 
+        deleteDoc, updateDoc, doc, documentId, arrayUnion } from 'firebase/firestore';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -22,7 +23,6 @@ const db = getFirestore(app);
 //user section
 const UsersRef = collection(db, "users");
 
-// Returns false if no existing user is found
 export async function getUserEmail(email) {
   const q = query(UsersRef, where("email", "==", email))
   const querySnapshot = await getDocs(q);
@@ -35,7 +35,7 @@ export async function addUser(userData) {
     console.log("Document written with ID: ", docRef.id);
   } catch (error) {
     throw new Error("Cannot add user")
-  }
+  } 
 }
 
 export async function getUser() {
@@ -71,15 +71,223 @@ export async function updateUserData(userId, updatedData) {
   }
 }
 
-
-//project section
-const ProjectsCollectionRef = collection(db, "projects");
-
-export async function createProject(userId, updatedData) {
+export async function addUserSharedProj(email, projectID) {
   try {
-    return true
+    const querySnap = await getUserEmail(email)
+    if(querySnap.empty)
+      return false
+    
+    const userDocRef = doc(UsersRef, querySnap.docs[0].id)
+    await updateDoc(userDocRef, {
+      sharedIDs : arrayUnion(projectID)
+    })
+  } catch(e) {
+    throw new Error(e.message)
+  }
+}
+
+
+// Project section
+const projectCol = collection(db, "projects");
+
+//Add new Project
+export async function addNewProject(projectData) {
+  try {
+    const docRef = await addDoc(projectCol, projectData);
+    console.log("Document written with ID: ", docRef.id);
+    const querySnap = await getProjectByID([docRef.id])
+    let newProject = querySnap.docs[0].data()
+    newProject.id = docRef.id
+    return newProject
+  } catch (e) {
+    throw new Error(e.message);
+  }
+}
+
+export async function getProjectByID(id) {
+  try {
+    const q = query(projectCol, where(documentId(), "in", id))
+    const querySnap = await getDocs(q)
+    return querySnap
+  } catch(e) {
+    throw new Error(e.message)
+  }
+}
+
+export async function getProjectByMaster(master) {
+  try {
+    const q = query(projectCol, where("master", "==", master))
+    const querySnap = await getDocs(q)
+    let projects = []
+    querySnap.forEach((doc) => {
+      let data = doc.data()
+      data.id = doc.id
+      projects.push(data)
+    })
+    return projects
+  } catch(e) {
+    throw e
+  }
+}
+
+// Add member 
+export async function addMember(projectID, master, member) {
+  try {
+    const snap = await Promise.all([getProjectByID([projectID])
+                ,getUserEmail(master),getUserEmail(member)])
+    if(snap[0].empty)
+      throw new Error("project doesn't exist")
+    if(snap[1].empty)
+      throw new Error("master doesn't exist")
+    if(snap[2].empty)
+      throw new Error("member doesn't exist")
+
+    let mems = snap[0].docs[0].data().members
+    if((mems != null && mems.includes(member)) || 
+      (snap[1].docs[0].data().email == snap[2].docs[0].data().email))
+        throw new Error("member has already been in project")
+    
+    const projectRef = doc(projectCol, snap[0].docs[0].id)
+    await updateDoc(projectRef, {
+      members : arrayUnion(member)
+    })
+
+    await addUserSharedProj(member, snap[0].docs[0].id)
+    return projectID
+  } catch(error) {
+    throw error
+  }
+}
+
+//Get project
+export async function getProject() {
+  const date = new Date();
+  try {
+    const querySnapshot = await getDocs(project);
+    const projects = [];
+    querySnapshot.forEach((doc) => {
+      const data = {
+        id: doc.id,
+        title: doc.data().title,
+        createdAt: doc.data().createdAt.toDate(),
+        status: doc.data().status,
+        description: doc.data().description,
+        tasks: doc.data().tasks,
+        members: doc.data().members,
+        master: doc.data().master,
+      }
+      console.log(doc.id, " => ", JSON.stringify(data));
+      projects.push(data);
+    });
+    return projects;
+  } catch (e) {
+    console.error("Error getting documents: ", e);
+  }
+}
+
+//Delete project
+export async function deleteProject(projectId) {
+  try {
+    await deleteDoc(doc(project, projectId));
+    console.log("Document deleted with ID: ", projectId);
+  } catch (e) {
+    console.error("Error deleting document: ", e);
+  }
+}
+
+// Task section
+const taskRF = collection(db, "tasks");
+
+export async function addTask(taskData, projectID) {
+  try {
+    const docRef = await addDoc(taskRF, taskData);
+    const prSnap = await getProjectByID([projectID])
+    if(prSnap.docs[0].data().tasks.length == 0)
+      return false
+
+    await updateDoc(doc(taskRF, docRef.id), {id: docRef.id});
+    const projectRef = doc(projectCol, projectID)
+    await updateDoc(projectRef, {
+      tasks : arrayUnion(docRef.id)
+    })
+    console.log("Document written with ID: ", docRef.id);
+  } catch (e) {
+    console.error("Error adding document: ", e);
+  }
+}
+
+export async function getTask(projectID) {
+  try {
+    const prSnap = await getProjectByID([projectID])
+    if(prSnap.docs[0].data().tasks.length == 0)
+      return []
+
+    const q = query(taskRF, where("id", "in", prSnap.docs[0].data().tasks))
+    const snap = await getDocs(q)
+    let tasks = []
+    snap.forEach((doc) => {
+      tasks.push(doc.data())
+    })
+    return tasks
+  } catch (e) {
+    console.error("Error getting documents: ", e);
+  }
+}
+
+export async function updateTask(taskID, taskData) {
+  try {
+    const docRef = doc(task, taskID);
+    await updateDoc(docRef, {
+      id: taskID,
+      status: taskData.status,
+      description: taskData.text,
+      assignedTo: taskData.asigned_to,
+    });
+    console.log("Document updated with ID: ", taskID);
   } catch (e) {
     console.error("Error updating document: ", e);
   }
 }
+
+export async function deleteTask(taskID) {
+  try {
+    const docRef = doc(task, taskID);
+    await deleteDoc(docRef);
+    console.log("Document updated with ID: ", taskID);
+  } catch (e) {
+    console.error("Error updating document: ", e);
+  }
+}
+
+//Image section
+
+export async function uploadAva(file, id){
+    let avaURL;
+    const storageRef = ref(storage, `images/avatar/${id}.jpg`);
+    console.log("uploading file");
+    await uploadBytes(storageRef, file).then((snapShot) => {
+      console.log("Uploaded a file!");
+      avaURL = snapShot.ref.fullPath;
+    });
+    await getDownloadURL(ref(storage, avaURL))
+      .then((url) => {
+        avaURL = url;
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+    //return avaURL;
+};
+
+export async function downloadAva(id){
+    let avaURL;
+  await getDownloadURL(ref(storage, `images/avatar/${id}.jpg`))
+    .then((url) => {
+      avaURL = url;
+    })
+    .catch((err) => {
+      console.log("No image found");
+    });
+  return avaURL;
+};
 
