@@ -8,6 +8,9 @@ import { addProject, getProject, deleteProject, addMember } from './database/pro
 import { getTask, addTask} from './database/project/Task.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { addProject, getProject, deleteProject } from './database/project/Project.js';
+import { addTask, updateTask, getTask, deleteTask } from './database/project/Task.js';
+import { uploadAva, downloadAva } from './database/user/profile.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -85,7 +88,7 @@ io.on('connection', (socket) => {
             console.log("Login successful")
             socket.emit('user log', "Login successful", user)
             socket.join(user.sharedIDs)
-            socket_user[user.email] = socket.id
+            console.log(user)
           })
           .catch((error) => {
             socket.emit("user log", error.message, null)
@@ -192,6 +195,68 @@ io.on('connection', (socket) => {
 
   
 
+
+
+
+  //Tasks
+socket.on('newTask', async (task) => {
+  try {
+    console.log(task);
+    await addTask(task);
+    socket.emit('newTask log', 'Task added successfully');
+  } catch (error) {
+    console.error('Error adding task:', error);
+  }
+});
+
+socket.on('getTask', async () => {
+  try {
+    const tasks = await getTask();
+    socket.emit('Tasks', tasks);
+  } catch (error) {
+    socket.emit('error', error);
+    console.error('Error getting tasks:', error);
+  }
+});
+
+socket.on('deleteTask', async (taskId) => {
+  try {
+    await deleteTask(taskId);
+    socket.emit('deleteTask log', 'Task deleted successfully');
+  } catch (error) {
+    console.error('Error deleting task:', error);
+  }
+});
+
+socket.on('updateTask', async (taskID, task) => {
+  try {
+    console.log(taskID);
+    await updateTask(taskID, task);
+    socket.emit('updateTask log', 'Task updated successfully');
+  } catch (error) {
+    console.error('Error updating task:', error);
+  }
+});
+
+//Profile Image
+socket.on('uploadAva', async (file, id) => {
+  try {
+    await uploadAva(file, id);
+    socket.emit('upload', 'upload image successfully');
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+socket.on('downloadAva', async (id) => {
+  try {
+    const avaURL = await downloadAva(id);
+    socket.emit('download', avaURL); // Send the actual image URL to the client
+  } catch (e) {
+    console.error('Error:', e);
+    socket.emit('download', null); // Send null or an error message to indicate failure
+  }
+});
 
   socket.on('disconnect', () => {
     console.log(`${socket.id} disconnected!`);
