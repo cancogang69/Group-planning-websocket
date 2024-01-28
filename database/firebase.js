@@ -1,7 +1,8 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { query, where, getFirestore, collection, getDocs, addDoc, 
-        deleteDoc, updateDoc, doc, documentId, arrayUnion } from 'firebase/firestore';
+        deleteDoc, updateDoc, doc, documentId, arrayUnion,
+        arrayRemove} from 'firebase/firestore';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -159,37 +160,27 @@ export async function addMember(projectID, master, member) {
   }
 }
 
-//Get project
-export async function getProject() {
-  const date = new Date();
-  try {
-    const querySnapshot = await getDocs(project);
-    const projects = [];
-    querySnapshot.forEach((doc) => {
-      const data = {
-        id: doc.id,
-        title: doc.data().title,
-        createdAt: doc.data().createdAt.toDate(),
-        status: doc.data().status,
-        description: doc.data().description,
-        tasks: doc.data().tasks,
-        members: doc.data().members,
-        master: doc.data().master,
-      }
-      console.log(doc.id, " => ", JSON.stringify(data));
-      projects.push(data);
-    });
-    return projects;
-  } catch (e) {
-    console.error("Error getting documents: ", e);
-  }
-}
-
 //Delete project
 export async function deleteProject(projectId) {
   try {
-    await deleteDoc(doc(project, projectId));
-    console.log("Document deleted with ID: ", projectId);
+    const prjSnap = await getProjectByID([projectId])
+    if(prjSnap.empty)
+      throw new Error("Project doesn't exist")
+    let prjData = prjSnap.docs[0].data()
+    let userDel = prjData.master.concat(prjData.members)
+    let taskDel = prjData.tasks
+
+    for (const user of userDel) {
+      const userdr = await getUserData(user)
+      await updateDoc(doc(UsersRef, userdr.docs[0].id), {
+        sharedIDs: arrayRemove([projectId])
+      })
+    }
+
+    for (const task of taskDel) {
+      await deleteDoc(taskRF, task.id)
+    }
+    
   } catch (e) {
     console.error("Error deleting document: ", e);
   }
@@ -202,8 +193,6 @@ export async function addTask(taskData, projectID) {
   try {
     const docRef = await addDoc(taskRF, taskData);
     const prSnap = await getProjectByID([projectID])
-    if(prSnap.docs[0].data().tasks.length == 0)
-      return false
 
     await updateDoc(doc(taskRF, docRef.id), {id: docRef.id});
     const projectRef = doc(projectCol, projectID)

@@ -35,9 +35,9 @@ export async function getProject(email) {
 
 export async function deleteProject(projectId) {
   try {
-    firebase.deleteProject(projectId)
+    await firebase.deleteProject(projectId)
   } catch (e) {
-    console.error("Error deleting document: ", e);
+    throw e
   }
 }
 

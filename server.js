@@ -161,12 +161,12 @@ io.on('connection', (socket) => {
     }
   });
   
-  socket.on('deleteProject', async (projectId) => {
+  socket.on('delete project', async (projectId) => {
     try {
       await deleteProject(projectId);
-      socket.emit('deleteProject', 'Project deleted successfully');
+      socket.emit('del project log', 'Project deleted successfully');
     } catch (error) {
-      console.error('Error deleting project:', error);
+      console.error('del project log', error.message);
     }
   });
 
@@ -189,6 +189,8 @@ io.on('connection', (socket) => {
         socket.emit("add task log", error.message)
       })
   })
+
+  
 
 
   socket.on('disconnect', () => {
